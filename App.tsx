@@ -34,6 +34,37 @@ function App() {
     setAiResult(null);
   };
 
+  const STORAGE_KEY = 'kh45_saved_simulations';
+
+  const saveToLibrary = (params: SimulationParams, result: AIResult) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      // Tránh trùng lặp: nếu đã có bài cùng tên + lớp + chủ đề thì ghi đè
+      const duplicateIndex = existing.findIndex(
+        (s: any) => s.lessonTitle === params.lessonTitle && s.grade === params.grade && s.topicName === params.topicName
+      );
+      const newSim = {
+        id: duplicateIndex >= 0 ? existing[duplicateIndex].id : Date.now().toString(),
+        grade: params.grade,
+        topicName: params.topicName,
+        lessonTitle: params.lessonTitle,
+        html: result.html,
+        questions: result.questions,
+        guide: result.guide,
+        createdAt: new Date().toISOString(),
+      };
+      if (duplicateIndex >= 0) {
+        existing[duplicateIndex] = newSim;
+      } else {
+        existing.unshift(newSim);
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+      console.log('[Library] Saved simulation:', params.lessonTitle);
+    } catch (e) {
+      console.warn('[Library] Failed to save:', e);
+    }
+  };
+
   const handleGenerate = async (params: SimulationParams) => {
     if (!apiKey) {
       setIsSettingsOpen(true);
@@ -47,6 +78,10 @@ function App() {
       const result = await generateSimulationContent(params, apiKey, selectedModel);
       setAiResult(result);
       setStatus('generated');
+      // Tự động lưu vào thư viện
+      if (selectedLesson) {
+        saveToLibrary(params, result);
+      }
     } catch (error) {
       console.error(error);
       setStatus('error');

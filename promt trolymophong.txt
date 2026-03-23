@@ -1,0 +1,184 @@
+Tạo một ứng dụng web "TRỢ LÝ TẠO MÔ PHỎNG KHOA HỌC LỚP 4-5" với các yêu cầu chi tiết sau:
+
+========================================
+I. TỔNG QUAN
+========================================
+- Tên app: TRỢ LÝ TẠO MÔ PHỎNG
+- Mục đích: Giúp giáo viên tạo mô phỏng khoa học tương tác (HTML/CSS/JS) cho học sinh lớp 4-5 bằng AI (Google Gemini)
+- Đối tượng: Giáo viên tiểu học, học sinh lớp 4-5
+- Sách giáo khoa: Kết nối tri thức (Khoa học lớp 4 và lớp 5)
+- Tác giả: Phát triển bởi cô Vũ Phương Thanh
+
+========================================
+II. CÔNG NGHỆ SỬ DỤNG
+========================================
+- React 19 + TypeScript
+- Vite (build tool)
+- Tailwind CSS (CDN)
+- Google Fonts: Space Grotesk
+- Lucide React (icon library)
+- Google Gemini AI API (@google/genai)
+- pdfjs-dist (đọc file PDF)
+- Màu chủ đạo: Teal (#0D9488), nền: #F0F9F9
+
+========================================
+III. CẤU TRÚC THƯ MỤC
+========================================
+/
+├── index.html              (Entry HTML với import map cho esm.sh)
+├── index.tsx               (React entry point, wrap SettingsProvider)
+├── App.tsx                 (Component chính, quản lý state & routing)
+├── types.ts                (TypeScript interfaces & constants)
+├── vite.config.ts          (Vite config)
+├── package.json
+├── tsconfig.json
+├── components/
+│   ├── Header.tsx          (Header sticky, nav tabs, settings button)
+│   ├── Sidebar.tsx         (Sidebar chọn lớp/chủ đề/bài học)
+│   ├── SimulationForm.tsx  (Form tùy chỉnh + nút tạo mô phỏng)
+│   ├── FileUploader.tsx    (Upload file ảnh/PDF/text)
+│   ├── ResultGenerated.tsx (Hiển thị kết quả: preview, code, câu hỏi, hướng dẫn)
+│   ├── LibraryView.tsx     (Thư viện mô phỏng đã lưu - localStorage)
+│   ├── GuideModal.tsx      (Modal hướng dẫn sử dụng)
+│   ├── SettingsModal.tsx   (Modal cài đặt API Key & chọn model)
+│   └── Footer.tsx          (Footer đơn giản)
+├── services/
+│   ├── geminiService.ts    (Gọi Gemini API, parse response, fallback models)
+│   └── curriculumData.ts   (Dữ liệu chương trình KH lớp 4 & 5)
+└── contexts/
+    └── SettingsContext.tsx  (Context quản lý API Key, model, settings modal)
+
+========================================
+IV. TÍNH NĂNG CHI TIẾT
+========================================
+
+1. SIDEBAR (Thanh bên trái):
+   - 2 tab chọn lớp: "Lớp 4" và "Lớp 5" (có màu riêng)
+   - Hiển thị danh sách chủ đề (Topics) theo lớp, mỗi chủ đề có icon và màu riêng
+   - Click chủ đề → mở rộng (accordion) → hiển thị danh sách bài học
+   - Click bài học → chọn bài, highlight active, đóng sidebar trên mobile
+   - Desktop: sidebar cố định 320px bên trái, sticky
+   - Mobile: sidebar overlay (slide từ trái), có backdrop blur
+
+2. MAIN VIEW (Trang chính khi chưa chọn bài):
+   - Welcome screen với icon BookOpen + Sparkles (animate bounce)
+   - Tiêu đề "Mô phỏng Khoa học 4-5"
+   - Mô tả hướng dẫn chọn bài
+   - Nút "Mở danh sách bài" cho mobile
+   - Grid thống kê: 2 Lớp học, 12 Chủ đề, 61 Bài học, Gemini AI Model
+
+3. SIMULATION FORM (Form khi đã chọn bài):
+   - Card gradient hiển thị thông tin bài đã chọn (Lớp + Chủ đề + Tên bài)
+   - Textarea "Thông số điều chỉnh" (VD: nhiệt độ nước, góc ánh sáng...)
+   - Textarea "Kết quả mong muốn" (VD: Học sinh quan sát hiện tượng...)
+   - Checkbox "Thiết bị hiển thị" (4 options: Máy chiếu+Laptop, Chỉ điện thoại, Không internet, Có internet)
+   - Nút toggle "Tải file bài tập bổ sung" → mở FileUploader
+   - FileUploader: hỗ trợ upload ảnh (JPG/PNG/GIF/WEBP), PDF, text files; tối đa 5 file, 10MB/file; đọc PDF bằng pdfjs-dist; hiển thị preview file đã upload
+
+4. KẾT QUẢ MÔ PHỎNG (ResultGenerated):
+   - Banner thành công gradient teal
+   - Nút "Tải HTML" (download file .html) và "Copy Code"
+   - Layout 2 cột (8:4):
+     + Cột trái: Khung preview lớn (iframe srcDoc, sandbox allow-scripts)
+     + Cột phải: 4 tab chuyển đổi nội dung:
+       * Mô phỏng (Preview iframe)
+       * Câu hỏi thực hành
+       * Hướng dẫn GV
+       * Source Code
+   - Box "AI Analysis" với thông tin responsive và offline
+
+5. THƯ VIỆN (LibraryView):
+   - Lưu mô phỏng vào localStorage (key: kh45_saved_simulations)
+   - Tìm kiếm theo tên bài hoặc chủ đề
+   - Lọc theo lớp (Tất cả / Lớp 4 / Lớp 5)
+   - Grid card mô phỏng đã lưu, mỗi card có: thông tin bài, ngày tạo, nút Mở (new window), nút Xóa
+   - Empty state khi chưa có mô phỏng
+
+6. SETTINGS (Cài đặt):
+   - Modal cài đặt API Key (Gemini)
+   - Lưu API Key vào localStorage
+   - Chọn AI Model: Gemini 3.0 Flash (khuyên dùng), Gemini 3.0 Pro, Gemini 2.5 Flash
+   - Tự động mở settings nếu chưa có API Key
+
+7. HEADER:
+   - Sticky top, backdrop blur, border dưới
+   - Logo + tên app "MÔ PHỎNG KHOA HỌC 4-5" + subtitle "Sách Kết nối tri thức"
+   - Nav center: "Bài học" | "Thư viện" | "Hướng dẫn"
+   - Nút Settings (cảnh báo nếu chưa có API Key)
+   - Nút menu hamburger trên mobile
+
+========================================
+V. GEMINI AI SERVICE
+========================================
+- Sử dụng @google/genai SDK
+- System prompt chuyên gia giáo dục khoa học tiểu học
+- Output format bắt buộc dùng delimiter:
+  |||HTML_START||| ... |||HTML_END|||
+  |||QUESTIONS_START||| ... |||QUESTIONS_END|||
+  |||GUIDE_START||| ... |||GUIDE_END|||
+
+- Prompt yêu cầu tạo:
+  A. Code HTML/CSS/JS single-file:
+     - Giao diện đơn giản, trẻ trung, chữ to, nút lớn
+     - Canvas/SVG để vẽ mô phỏng
+     - Slider/input/checkbox điều chỉnh thông số
+     - Hiển thị giá trị real-time
+     - Tất cả tiếng Việt
+     - Chạy offline trên trình duyệt
+  B. 5-7 Câu hỏi thực hành (quan sát → đo đạc → phân tích → liên hệ thực tế)
+  C. Hướng dẫn sử dụng cho giáo viên
+
+- Fallback model chain: gemini-3-flash-preview → gemini-3-pro-preview → gemini-2.5-flash
+- Hỗ trợ multimodal (gửi ảnh inline) khi có file upload
+- Parse response bằng regex, fallback ```html``` code block
+
+========================================
+VI. DỮ LIỆU CHƯƠNG TRÌNH HỌC
+========================================
+Cấu trúc: GradeData[] → Topic[] → Lesson[]
+
+LỚP 4 (6 chủ đề, 31 bài):
+1. Chủ đề CHẤT (💧 xanh dương): 7 bài (nước, không khí, gió bão...)
+2. Chủ đề NĂNG LƯỢNG (⚡ vàng): 7 bài (ánh sáng, âm thanh, nhiệt...)
+3. Chủ đề THỰC VẬT VÀ ĐỘNG VẬT (🌿 xanh lá): 4 bài
+4. Chủ đề NẤM (🍄 tím): 4 bài
+5. Chủ đề CON NGƯỜI VÀ SỨC KHỎE (❤️ đỏ): 6 bài
+6. Chủ đề SINH VẬT VÀ MÔI TRƯỜNG (🌍 cyan): 3 bài
+
+LỚP 5 (6 chủ đề, 30 bài):
+1. Chủ đề CHẤT (🧪 xanh dương): 6 bài (đất, hỗn hợp, biến đổi hóa học...)
+2. Chủ đề NĂNG LƯỢNG (🔋 vàng): 6 bài (điện, mạch điện, năng lượng...)
+3. Chủ đề THỰC VẬT VÀ ĐỘNG VẬT (🌱 xanh lá): 5 bài (sinh sản, phát triển...)
+4. Chủ đề VI KHUẨN (🦠 tím): 4 bài
+5. Chủ đề CON NGƯỜI VÀ SỨC KHỎE (🧬 đỏ): 6 bài (hình thành cơ thể, dậy thì...)
+6. Chủ đề SINH VẬT VÀ MÔI TRƯỜNG (🌏 cyan): 3 bài
+
+Mỗi bài học có: id, title (tên bài), page (số trang trong SGK)
+
+========================================
+VII. UI/UX DESIGN
+========================================
+- Font: Space Grotesk + Segoe UI
+- Màu chính: Teal (#0D9488, #0F766E)
+- Nền: #F0F9F9 (xanh nhạt)
+- Text: #1A2E2C (đen xanh)
+- Bo góc: rounded-xl, rounded-2xl, rounded-3xl
+- Shadow: shadow-sm, shadow-lg, shadow-2xl
+- Animation: backdrop-blur, animate-bounce, animate-spin, animate-pulse
+- Responsive: mobile-first, lg breakpoint cho sidebar
+- Custom scrollbar: teal color, 6px width
+- Loading overlay: fullscreen blur + spinner + progress bar
+- Gradient buttons và cards
+- Hover effects: translate-y, shadow changes, color transitions
+
+========================================
+VIII. CÁC BƯỚC CHẠY
+========================================
+1. npm install
+2. npm run dev (Vite dev server)
+3. Mở trình duyệt → Nhập API Key Gemini
+4. Chọn lớp → Chọn chủ đề → Chọn bài học
+5. (Tùy chọn) Nhập thông số, upload file
+6. Click "Tạo mô phỏng AI" → Đợi AI tạo
+7. Xem preview, câu hỏi, hướng dẫn, source code
+8. Download HTML hoặc copy code

@@ -41,10 +41,66 @@ const LibraryView: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
+  const buildFullHtml = (sim: SavedSimulation): string => {
+    const escapeHtml = (str: string) => str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${sim.lessonTitle} - Mô phỏng Khoa học</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f9f9; }
+  .sim-container { width: 100%; min-height: 80vh; border: none; }
+  .extra-sections { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab-btn { padding: 12px 24px; border: 2px solid #e2e8f0; border-radius: 12px;
+    background: #fff; cursor: pointer; font-weight: 700; font-size: 14px;
+    color: #64748b; transition: all 0.2s; }
+  .tab-btn:hover { border-color: #0d9488; color: #0d9488; }
+  .tab-btn.active { background: #0d9488; color: #fff; border-color: #0d9488; }
+  .tab-content { display: none; background: #fff; border-radius: 16px;
+    padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    white-space: pre-wrap; line-height: 1.8; font-size: 15px; color: #334155; }
+  .tab-content.active { display: block; }
+  .tab-content h3 { color: #0d9488; font-size: 20px; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 2px solid #f0fdfa; }
+</style>
+</head>
+<body>
+<iframe class="sim-container" srcdoc="${sim.html.replace(/"/g, '&quot;')}" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
+<div class="extra-sections">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('questions')">📝 Câu hỏi thực hành</button>
+    <button class="tab-btn" onclick="showTab('guide')">👩‍🏫 Hướng dẫn Giáo viên</button>
+  </div>
+  <div id="tab-questions" class="tab-content active">
+    <h3>📝 Câu hỏi thực hành</h3>
+    <div>${escapeHtml(sim.questions || 'Không có câu hỏi.')}</div>
+  </div>
+  <div id="tab-guide" class="tab-content">
+    <h3>👩‍🏫 Hướng dẫn Giáo viên</h3>
+    <div>${escapeHtml(sim.guide || 'Không có hướng dẫn.')}</div>
+  </div>
+</div>
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>`;
+  };
+
   const openSimulation = (sim: SavedSimulation) => {
+    const fullHtml = buildFullHtml(sim);
     const win = window.open('', '_blank');
     if (win) {
-      win.document.write(sim.html);
+      win.document.write(fullHtml);
       win.document.close();
     }
   };
